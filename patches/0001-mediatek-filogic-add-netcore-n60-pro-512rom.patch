@@ -10,6 +10,19 @@ index 6e8c2c1..8113808 100644
  netis,nx30v2|\
  netis,nx31|\
  netis,nx32u|\
+diff --git a/package/boot/uboot-mediatek/Makefile b/package/boot/uboot-mediatek/Makefile
+index caa6095..f6dfb61 100644
+--- a/package/boot/uboot-mediatek/Makefile
++++ b/package/boot/uboot-mediatek/Makefile
+@@ -775,7 +775,7 @@ define U-Boot/mt7986_netcore_n60
+ define U-Boot/mt7986_netcore_n60-pro
+   NAME:=Netcore N60 Pro
+   BUILD_SUBTARGET:=filogic
+-  BUILD_DEVICES:=netcore_n60-pro
++  BUILD_DEVICES:=netcore_n60-pro netcore_n60-pro-512rom
+   UBOOT_CONFIG:=mt7986_netcore_n60-pro
+   UBOOT_IMAGE:=u-boot.fip
+   BL2_BOOTDEV:=spim-nand
 diff --git a/target/linux/mediatek/dts/mt7986a-netcore-n60-pro-512rom.dts b/target/linux/mediatek/dts/mt7986a-netcore-n60-pro-512rom.dts
 new file mode 100644
 index 0000000..4444f7a
