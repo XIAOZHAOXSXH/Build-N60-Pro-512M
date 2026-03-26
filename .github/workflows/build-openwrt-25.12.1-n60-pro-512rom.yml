@@ -1,0 +1,107 @@
+name: build-openwrt-25.12.1-n60-pro-512rom
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - ".github/workflows/build-openwrt-25.12.1-n60-pro-512rom.yml"
+      - "configs/**"
+      - "patches/**"
+      - "README.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OPENWRT_REPO: https://github.com/openwrt/openwrt.git
+  OPENWRT_REF: v25.12.1
+  CONFIG_FILE: configs/netcore_n60-pro-512rom.config
+  PATCH_FILE: patches/0001-mediatek-filogic-add-netcore-n60-pro-512rom.patch
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare builder
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install \
+            ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk \
+            gettext gcc-multilib g++-multilib git gperf haveged help2man intltool \
+            lib32gcc-s1 libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
+            libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
+            libreadline-dev libssl-dev libtool lld lrzsz mkisofs msmtp nano ninja-build \
+            p7zip p7zip-full patch pkgconf python3 python3-docutils python3-pip python3-ply \
+            qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs unzip \
+            vim wget xmlto xxd zlib1g-dev
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+          sudo timedatectl set-timezone "$TZ"
+          sudo mkdir -p /workdir
+          sudo chown "$USER:$USER" /workdir
+
+      - name: Clone OpenWrt source
+        working-directory: /workdir
+        run: |
+          git clone --depth=1 --branch "$OPENWRT_REF" "$OPENWRT_REPO" openwrt
+          ln -sf /workdir/openwrt "$GITHUB_WORKSPACE/openwrt"
+
+      - name: Apply local patch
+        run: |
+          cd openwrt
+          git apply --check "$GITHUB_WORKSPACE/$PATCH_FILE"
+          git apply "$GITHUB_WORKSPACE/$PATCH_FILE"
+
+      - name: Update feeds
+        run: cd openwrt && ./scripts/feeds update -a
+
+      - name: Install feeds
+        run: cd openwrt && ./scripts/feeds install -a
+
+      - name: Load custom config
+        run: |
+          cp "$CONFIG_FILE" openwrt/.config
+          cd openwrt
+          make defconfig
+          ./scripts/diffconfig.sh || true
+
+      - name: Download packages
+        run: |
+          cd openwrt
+          make download -j"$(nproc)"
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: Build firmware
+        run: |
+          cd openwrt
+          echo "$(nproc) threads build"
+          make -j"$(nproc)" || make -j1 V=s
+          echo "FILE_DATE=$(date +%Y%m%d%H%M)" >> "$GITHUB_ENV"
+
+      - name: Organize artifacts
+        run: |
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          echo "FIRMWARE_DIR=$PWD" >> "$GITHUB_ENV"
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-netcore-n60-pro-512rom-${{ env.FILE_DATE }}
+          path: ${{ env.FIRMWARE_DIR }}
+          if-no-files-found: error
