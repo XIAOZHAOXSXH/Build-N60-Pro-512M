@@ -495,3 +495,27 @@ index 1e23c7d..5586e2e 100644
  define Device/netcraze_nc-1812
    DEVICE_VENDOR := Netcraze
    DEVICE_MODEL := NC-1812
+diff --git a/include/feeds.mk b/include/feeds.mk
+index f484a4e..b1024df 100644
+--- a/include/feeds.mk
++++ b/include/feeds.mk
+@@ -37,8 +37,7 @@ define FeedSourcesAppendOPKG
+   echo 'src/gz %d_core %U/targets/%S/packages'; \
+   $(strip $(if $(CONFIG_PER_FEED_REPO), \
+ 	echo 'src/gz %d_base %U/packages/%A/base'; \
+-	$(if $(CONFIG_BUILDBOT), \
+-		echo 'src/gz %d_kmods %U/targets/%S/kmods/$(LINUX_VERSION)-$(LINUX_RELEASE)-$(LINUX_VERMAGIC)';) \
++	echo 'src/gz %d_kmods %U/targets/%S/kmods/$(LINUX_VERSION)-$(LINUX_RELEASE)-$(LINUX_VERMAGIC)'; \
+ 	$(foreach feed,$(FEEDS_AVAILABLE), \
+ 		$(if $(CONFIG_FEED_$(feed)), \
+ 			echo '$(if $(filter m,$(CONFIG_FEED_$(feed))),# )src/gz %d_$(feed) %U/packages/%A/$(feed)';)))) \
+@@ -51,8 +50,7 @@ define FeedSourcesAppendAPK
+   echo '%U/targets/%S/packages/packages.adb'; \
+   $(strip $(if $(CONFIG_PER_FEED_REPO), \
+ 	echo '%U/packages/%A/base/packages.adb'; \
+-	$(if $(CONFIG_BUILDBOT), \
+-		echo '%U/targets/%S/kmods/$(LINUX_VERSION)-$(LINUX_RELEASE)-$(LINUX_VERMAGIC)/packages.adb';) \
++	echo '%U/targets/%S/kmods/$(LINUX_VERSION)-$(LINUX_RELEASE)-$(LINUX_VERMAGIC)/packages.adb'; \
+ 	$(foreach feed,$(FEEDS_AVAILABLE), \
+ 		$(if $(CONFIG_FEED_$(feed)), \
+ 			echo '$(if $(filter m,$(CONFIG_FEED_$(feed))),# )%U/packages/%A/$(feed)/packages.adb';)))) \
